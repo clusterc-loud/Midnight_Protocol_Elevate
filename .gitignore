@@ -1,0 +1,126 @@
+# ============================================================
+# ReproLens - Git Ignore
+# ============================================================
+
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging
+*.egg-info/
+.eggs/
+dist/
+build/
+wheels/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# -------------------------
+# Environment / Secrets
+# -------------------------
+.env
+.env.*
+!.env.example
+
+# -------------------------
+# Node / React / Vite
+# -------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+frontend/dist/
+frontend/build/
+dist/
+build/
+
+# Vite
+.vite/
+
+# -------------------------
+# IDE / Editors
+# -------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# -------------------------
+# OS
+# -------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -------------------------
+# Logs
+# -------------------------
+*.log
+logs/
+
+# -------------------------
+# Runtime / Temporary files
+# -------------------------
+tmp/
+temp/
+*.tmp
+
+# -------------------------
+# ReproLens generated data
+# -------------------------
+runs/
+outputs/
+runtime/
+artifacts/
+cache/
+
+# Generated reports
+reports/generated/
+
+# Docker temporary files
+.docker/
+
+# -------------------------
+# Databases
+# -------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# -------------------------
+# Jupyter
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+# Python local tooling
+# -------------------------
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# -------------------------
+# OS / tooling leftovers
+# -------------------------
+*.bak
+*.orig

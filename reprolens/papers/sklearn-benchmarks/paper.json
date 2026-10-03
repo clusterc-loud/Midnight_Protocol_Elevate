@@ -1,0 +1,84 @@
+{
+  "id": "sklearn-benchmarks",
+  "title": "Scikit-learn Internal Benchmarks: Classical ML on Standard Datasets",
+  "authors": ["Pedregosa", "Varoquaux", "Gramfort", "Michel", "Thirion", "Grisel", "Blondel", "Prettenhofer", "Weiss", "Dubourg", "Vanderplas", "Passos", "Cournapeau", "Brucher", "Perrot", "Duchesnay"],
+  "year": 2011,
+  "paper_url": "https://scikit-learn.org/stable/",
+  "repo_url": "https://github.com/scikit-learn/scikit-learn",
+  "commit": "main",
+  "environment": {
+    "python": "3.11",
+    "packages": ["scikit-learn==1.4.2", "numpy==1.24.3"]
+  },
+  "dockerfile": "Dockerfile",
+  "claims": [
+    {
+      "id": "EXP-001",
+      "name": "RandomForest on Iris",
+      "metric": "accuracy",
+      "reported_value": 0.96,
+      "provenance": {
+        "paper": "Scikit-learn Documentation",
+        "table": "Classifier comparison",
+        "row": "RandomForest",
+        "col": "accuracy",
+        "dataset": "iris"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=rf --dataset=iris",
+        "files": ["benchmark.py"]
+      }
+    },
+    {
+      "id": "EXP-002",
+      "model": "LogisticRegression",
+      "metric": "accuracy",
+      "reported_value": 0.97,
+      "provenance": {
+        "paper": "Scikit-learn Documentation",
+        "table": "Classifier comparison",
+        "row": "LogisticRegression",
+        "col": "accuracy",
+        "dataset": "iris"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=logreg --dataset=iris",
+        "files": ["benchmark.py"]
+      }
+    },
+    {
+      "id": "EXP-003",
+      "model": "RandomForest",
+      "metric": "accuracy",
+      "reported_value": 0.95,
+      "provenance": {
+        "paper": "Scikit-learn Documentation",
+        "table": "Classifier comparison",
+        "row": "RandomForest",
+        "col": "accuracy",
+        "dataset": "digits"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=rf --dataset=digits",
+        "files": ["benchmark.py"]
+      }
+    },
+    {
+      "id": "EXP-004",
+      "model": "LogisticRegression",
+      "metric": "accuracy",
+      "reported_value": 0.96,
+      "provenance": {
+        "paper": "Scikit-learn Documentation",
+        "table": "Classifier comparison",
+        "row": "LogisticRegression",
+        "col": "accuracy",
+        "dataset": "digits"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=logreg --dataset=digits",
+        "files": ["benchmark.py"]
+      }
+    }
+  ]
+}

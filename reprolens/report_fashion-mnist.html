@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReproLens Assessment: Fashion-MNIST Benchmark</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #ffffff;
+      color: #212121;
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header {
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+    .meta { font-size: 0.875rem; color: #757575; }
+    .meta span { margin-right: 24px; }
+    .replay-banner {
+      background: #ffcdd2; color: #c62828;
+      padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .summary-cards {
+      display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .card {
+      padding: 16px 24px; border-radius: 8px;
+      font-weight: 600; font-size: 1.1rem;
+      display: flex; flex-direction: column; align-items: center; min-width: 100px;
+    }
+    .card.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .card.partial { background: #ffe0b2; color: #e65100; }
+    .card.significant { background: #ffcdd2; color: #c62828; }
+    .card.not_executable { background: #e0e0e0; color: #616161; }
+    .card.insufficient { background: #fce4ec; color: #c62828; border: 1px dashed #e91e63; }
+    .card .count { font-size: 2rem; line-height: 1; }
+    .card .label { font-size: 0.75rem; font-weight: 400; margin-top: 4px; text-transform: uppercase; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .comparison-table th, .comparison-table td {
+      padding: 12px 16px; text-align: left; border-bottom: 1px solid #e0e0e0;
+    }
+    .comparison-table th { background: #f5f5f5; font-weight: 600; font-size: 0.875rem; }
+    .comparison-table td { font-size: 0.875rem; }
+    .comparison-table td.negative { color: #c62828; }
+    .comparison-table td.positive { color: #2e7d32; }
+    .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .badge.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .badge.partial { background: #ffe0b2; color: #e65100; }
+    .badge.significant { background: #ffcdd2; color: #c62828; }
+    .badge.not_executable { background: #e0e0e0; color: #616161; }
+    .evidence-chip {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 500; margin-right: 8px;
+    }
+    .evidence-chip.E1 { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+    .evidence-chip.E2 { background: #fff3e0; border: 1px dashed #ff9800; color: #e65100; }
+    .evidence-chip.E3 { background: #fce4ec; border: 1px dotted #e91e63; color: #c62828; }
+    .evidence-row { cursor: pointer; }
+    .evidence-row:hover { background: #fafafa; }
+    .evidence-drawer { margin-top: 8px; padding: 16px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; }
+    .evidence-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .discrepancy-notes { font-size: 0.8rem; color: #616161; }
+    .discrepancy-notes strong { color: #e65100; }
+    .limitations { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+    .limitation-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .limitation-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 500;
+      background: #fff3e0; border: 1px solid #ff9800; color: #e65100;
+    }
+    .tier-legend {
+      font-size: 0.8rem; color: #757575; line-height: 1.6;
+    }
+    .tier-legend strong { color: #212121; }
+    .exp-id { font-family: monospace; font-size: 0.75rem; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
+    .negative { color: #c62828; }
+    .positive { color: #2e7d32; }
+    .replay-banner {
+      background: #ffcdd2; color: #c62828;
+      padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .meta { font-size: 0.875rem; color: #757575; }
+    .meta span { margin-right: 24px; }
+    .meta a { color: #1976d2; text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+    details summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+    .evidence-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .evidence-chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 500;
+    }
+    .evidence-chip.E1 { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+    .evidence-chip.E2 { background: #fff3e0; border: 1px dashed #ff9800; color: #e65100; }
+    .evidence-chip.E3 { background: #fce4ec; border: 1px dotted #e91e63; color: #c62828; }
+    .drawer-content { padding-top: 8px; }
+    .discrepancy-notes { font-size: 0.8rem; color: #616161; margin-top: 8px; }
+    .discrepancy-notes strong { color: #e65100; }
+    .tier-legend { font-size: 0.8rem; color: #757575; line-height: 1.6; margin-top: 16px; }
+    .tier-legend strong { color: #212121; }
+    .limitation-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .limitation-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 500;
+      background: #fff3e0; border: 1px solid #ff9800; color: #e65100;
+    }
+    .card .count { font-size: 2rem; line-height: 1; }
+    .card .label { font-size: 0.75rem; font-weight: 400; margin-top: 4px; text-transform: uppercase; }
+    .summary-cards { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .card { padding: 16px 24px; border-radius: 8px; font-weight: 600; font-size: 1.1rem;
+      display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+    .card.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .card.partial { background: #ffe0b2; color: #e65100; }
+    .card.significant { background: #ffcdd2; color: #c62828; }
+    .card.not_executable { background: #e0e0e0; color: #616161; }
+    .card.insufficient { background: #fce4ec; color: #c62828; border: 1px dashed #e91e63; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .comparison-table th, .comparison-table td {
+      padding: 12px 16px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    .comparison-table th { background: #f5f5f5; font-weight: 600; font-size: 0.875rem; }
+    .comparison-table td { font-size: 0.875rem; }
+    .comparison-table td.negative { color: #c62828; }
+    .comparison-table td.positive { color: #2e7d32; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 600; }
+    .badge.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .badge.partial { background: #ffe0b2; color: #e65100; }
+    .badge.significant { background: #ffcdd2; color: #c62828; }
+    .badge.not_executable { background: #e0e0e0; color: #616161; }
+    .evidence-chip { display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 500; margin-right: 8px; }
+    .evidence-chip.E1 { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+    .evidence-chip.E2 { background: #fff3e0; border: 1px dashed #ff9800; color: #e65100; }
+    .evidence-chip.E3 { background: #fce4ec; border: 1px dotted #e91e63; color: #c62828; }
+    .evidence-row { cursor: pointer; }
+    .evidence-row:hover { background: #fafafa; }
+    .evidence-drawer { margin-top: 8px; padding: 16px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; }
+    .evidence-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .discrepancy-notes { font-size: 0.8rem; color: #616161; }
+    .discrepancy-notes strong { color: #e65100; }
+    .limitations { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+    .limitation-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .limitation-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 500;
+      background: #fff3e0; border: 1px solid #ff9800; color: #e65100; }
+    .tier-legend { font-size: 0.8rem; color: #757575; line-height: 1.6; }
+    .tier-legend strong { color: #212121; }
+    .replay-banner {
+      background: #ffcdd2; color: #c62828; padding: 12px 16px;
+      border-radius: 4px; margin-bottom: 16px; font-weight: 600; }
+    .meta { font-size: 0.875rem; color: #757575; }
+    .meta span { margin-right: 24px; }
+    .meta a { color: #1976d2; text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+    details summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+    .evidence-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .evidence-chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 500; }
+    .evidence-chip.E1 { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+    .evidence-chip.E2 { background: #fff3e0; border: 1px dashed #ff9800; color: #e65100; }
+    .evidence-chip.E3 { background: #fce4ec; border: 1px dotted #e91e63; color: #c62828; }
+    .drawer-content { padding-top: 8px; }
+    .discrepancy-notes { font-size: 0.8rem; color: #616161; }
+    .discrepancy-notes strong { color: #e65100; }
+    .tier-legend { font-size: 0.8rem; color: #757575; line-height: 1.6; }
+    .tier-legend strong { color: #212121; }
+    .limitation-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .limitation-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 500;
+      background: #fff3e0; border: 1px solid #ff9800; color: #e65100; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>ReproLens Assessment: Fashion-MNIST Benchmark</h1>
+      <div class="meta">
+        <span>Paper: <a href="https://arxiv.org/abs/1708.07747">arXiv:1708.07747</a></span>
+        <span>Repo: <a href="https://github.com/zalandoresearch/fashion-mnist/commit/a1b2c3d">a1b2c3d</a></span>
+        <span>Image: sha256:abc123......</span>
+        <span>Env: Python 3.11, sklearn 1.4.2 | CPU-only | 4GB RAM</span>
+      </div>
+      
+      <div class="replay-banner">REPLAY MODE - Live execution failed; showing pre-recorded run</div>
+      
+    </header>
+
+    <section class="summary-cards">
+      <div class="card near_exact"><span class="count">2</span><span class="label">near_exact</span></div>
+      <div class="card partial"><span class="count">0</span><span class="label">partial</span></div>
+      <div class="card significant"><span class="count">0</span><span class="label">significant</span></div>
+      <div class="card not_executable"><span class="count">0</span><span class="label">not_executable</span></div>
+      <div class="card insufficient"><span class="count">0</span><span class="label">insufficient</span></div>
+    </section>
+
+    <section class="comparison-table">
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Claim</th><th>Reported</th><th>Reproduced</th><th>Abs Diff</th><th>Rel%</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr class="evidence-row" onclick="toggleDrawer('drawer-EXP-001')">
+            <td><span class="exp-id">EXP-001</span> RandomForest</td>
+            <td>0.873 <span class="evidence-chip E1" title="Paper Table 1, Row RandomForest, Col Accuracy">E1</span></td>
+            <td>0.878 <span class="evidence-chip E1" title="stdout.log:last Test accuracy: 0.878">E1</span></td>
+            <td class="positive">0.0050</td>
+            <td>0.57%</td>
+            <td><span class="badge near_exact" title="abs_diff=0.0050, rel%=0.57%">near_exact</span></td>
+          </tr>
+          
+          <tr class="evidence-row" onclick="toggleDrawer('drawer-EXP-002')">
+            <td><span class="exp-id">EXP-002</span> LogisticRegression</td>
+            <td>0.851 <span class="evidence-chip E1" title="Paper Table 1, Row LogisticRegression, Col Accuracy">E1</span></td>
+            <td>0.848 <span class="evidence-chip E1" title="stdout.log:last Test accuracy: 0.848">E1</span></td>
+            <td class="negative">-0.0030</td>
+            <td>-0.35%</td>
+            <td><span class="badge near_exact" title="abs_diff=-0.0030, rel%=-0.35%">near_exact</span></td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </section>
+
+    
+    <details id="drawer-EXP-001" class="evidence-drawer">
+      <summary class="drawer-summary">Evidence for RandomForest (EXP-001)</summary>
+      <div class="drawer-content">
+        <div class="evidence-chips">
+          <span class="evidence-chip E1" title="Paper Table 1, Row RandomForest, Col Accuracy">E1: Paper Table 1</span>
+          <span class="evidence-chip E1" title="stdout.log:last Test accuracy: 0.878">E1: stdout.log:last</span>
+          <span class="evidence-chip E2" title="python benchmark.py --model=rf">E2: benchmark.py</span>
+          <span class="evidence-chip E2" title="benchmark.py defaults: n_estimators=100">E2: benchmark.py defaults: n_estimators=100</span>
+          
+        </div>
+        <div class="discrepancy-notes">Paper n_estimators=100 matches repo default. Single seed - variance not estimated.</div>
+      </div>
+    </details>
+    
+    <details id="drawer-EXP-002" class="evidence-drawer">
+      <summary class="drawer-summary">Evidence for LogisticRegression (EXP-002)</summary>
+      <div class="drawer-content">
+        <div class="evidence-chips">
+          <span class="evidence-chip E1" title="Paper Table 1, Row LogisticRegression, Col Accuracy">E1: Paper Table 1</span>
+          <span class="evidence-chip E1" title="stdout.log:last Test accuracy: 0.848">E1: stdout.log:last</span>
+          <span class="evidence-chip E2" title="python benchmark.py --model=logreg">E2: benchmark.py</span>
+          <span class="evidence-chip E2" title="benchmark.py defaults: n_estimators=100">E2: benchmark.py defaults: n_estimators=100</span>
+          
+        </div>
+        <div class="discrepancy-notes">Paper n_estimators=100 matches repo default. Single seed - variance not estimated.</div>
+      </div>
+    </details>
+    
+
+    <footer class="limitations">
+      <h3>Limitations</h3>
+      <div class="limitation-badges">
+        
+        <span class="limitation-badge">Single seed - variance not estimated</span>
+        
+        <span class="limitation-badge">Human-curated mapping</span>
+        
+        <span class="limitation-badge">CPU-only execution</span>
+        
+        <span class="limitation-badge">sklearn version not stated in paper</span>
+        
+      </div>
+      <div class="tier-legend">
+        <strong>Evidence Tiers:</strong>
+        E1 = Directly observed (log line, paper span, hash)
+        E2 = Deterministically inferred (mapping, config, version)
+        E3 = LLM interpretation (not used in critical path)
+        <br><strong>Rule:</strong> Conclusions resting only on E3 > Insufficient evidence
+      </div>
+    </footer>
+
+    <script>
+      function toggleDrawer(id) {
+        const el = document.getElementById(id);
+        if (el) el.open = !el.open;
+      }
+      // Allow clicking row to toggle drawer
+      document.querySelectorAll('.evidence-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const target = document.getElementById(row.dataset.drawer);
+          if (target) target.open = !target.open;
+        });
+      });
+    </script>
+  </div>
+</body>
+</html>

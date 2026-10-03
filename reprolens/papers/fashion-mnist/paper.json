@@ -1,0 +1,51 @@
+{
+  "id": "fashion-mnist",
+  "title": "Fashion-MNIST: a Novel Image Dataset for Benchmarking Machine Learning Algorithms",
+  "authors": ["Xiao", "Rasul", "Vollgraf"],
+  "year": 2017,
+  "arxiv": "1708.07747",
+  "paper_url": "https://arxiv.org/abs/1708.07747",
+  "repo_url": "https://github.com/zalandoresearch/fashion-mnist",
+  "commit": "a1b2c3d",
+  "environment": {
+    "python": "3.11",
+    "packages": ["scikit-learn==1.4.2", "numpy==1.24.3"]
+  },
+  "dockerfile": "Dockerfile",
+  "claims": [
+    {
+      "id": "EXP-001",
+      "name": "RandomForest",
+      "metric": "accuracy",
+      "reported_value": 0.873,
+      "provenance": {
+        "paper": "arXiv:1708.07747",
+        "page": 4,
+        "table": "Table 1",
+        "row": "RandomForest",
+        "col": "Accuracy"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=rf",
+        "files": ["benchmark.py"]
+      }
+    },
+    {
+      "id": "EXP-002",
+      "model": "LogisticRegression",
+      "metric": "accuracy",
+      "reported_value": 0.851,
+      "provenance": {
+        "paper": "arXiv:1708.07747",
+        "page": 4,
+        "table": "Table 1",
+        "row": "LogisticRegression",
+        "col": "Accuracy"
+      },
+      "mapping": {
+        "command": "python benchmark.py --model=logreg",
+        "files": ["benchmark.py"]
+      }
+    }
+  ]
+}

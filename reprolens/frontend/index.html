@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReproLens - Reproducibility Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #fafafa;
+      color: #212121;
+      line-height: 1.5;
+    }
+    .app { display: flex; min-height: 100vh; }
+    
+    /* Sidebar - Paper Catalog */
+    .sidebar {
+      width: 280px;
+      background: #fff;
+      border-right: 1px solid #e0e0e0;
+      padding: 16px;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .sidebar-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e0e0e0;
+    }
+    .sidebar h2 { font-size: 1.1rem; font-weight: 600; }
+    .paper-list { list-style: none; }
+    .paper-item {
+      padding: 12px; border-radius: 8px; margin-bottom: 8px;
+      cursor: pointer; transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .paper-item:hover { background: #f5f5f5; }
+    .paper-item.active { background: #e3f2fd; border-color: #2196f3; }
+    .paper-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+    .paper-meta { font-size: 0.75rem; color: #757575; }
+    .paper-meta span { margin-right: 8px; }
+    
+    /* Main Content */
+    .main { flex: 1; padding: 24px; overflow-y: auto; }
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .header .meta { font-size: 0.875rem; color: #757575; }
+    .header .meta span { margin-right: 24px; }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #e0e0e0; }
+    .tab {
+      padding: 12px 24px; cursor: pointer; font-weight: 500; font-size: 0.875rem;
+      color: #757575; border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: #212121; background: #f5f5f5; }
+    .tab.active { color: #1976d2; border-bottom-color: #1976d2; }
+    
+    /* Tab Panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Pipeline View */
+    .pipeline { display: flex; flex-direction: column; gap: 16px; }
+    .pipeline-stage {
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 16px; transition: all 0.3s;
+    }
+    .pipeline-stage.active { border-color: #2196f3; box-shadow: 0 0 0 2px rgba(33,150,243,0.1); }
+    .pipeline-stage.completed { border-color: #4caf50; }
+    .pipeline-stage.error { border-color: #f44336; }
+    .stage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .stage-title { font-weight: 600; font-size: 1rem; }
+    .stage-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+    }
+    .stage-status.pending { background: #e0e0e0; color: #616161; }
+    .stage-status.running { background: #e3f2fd; color: #1976d2; }
+    .stage-status.completed { background: #e8f5e9; color: #2e7d32; }
+    .stage-status.error { background: #ffebee; color: #c62828; }
+    .stage-spinner {
+      width: 16px; height: 16px; border: 2px solid #e0e0e0; border-top-color: #2196f3;
+      border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stage-logs { font-family: monospace; font-size: 0.75rem; background: #f5f5f5; padding: 12px; border-radius: 4px; max-height: 200px; overflow-y: auto; }
+    .log-line { padding: 2px 0; color: #424242; border-bottom: 1px solid #e0e0e0; }
+    .log-line:last-child { border-bottom: none; }
+    .log-line.timestamp { color: #9e9e9e; }
+    .log-line.error { color: #c62828; }
+    .log-line.success { color: #2e7d32; }
+    
+    /* Results Table */
+    .results-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .results-table th, .results-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    .results-table th { background: #f5f5f5; font-weight: 600; font-size: 0.875rem; }
+    .results-table td { font-size: 0.875rem; }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table tr:hover td { background: #fafafa; }
+    .exp-id { font-family: monospace; font-size: 0.75rem; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
+    .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .badge.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .badge.partial { background: #ffe0b2; color: #e65100; }
+    .badge.significant { background: #ffcdd2; color: #c62828; }
+    .badge.not_executable { background: #e0e0e0; color: #616161; }
+    .badge.insufficient { background: #fce4ec; color: #c62828; border: 1px dashed #e91e63; }
+    .negative { color: #c62828; }
+    .positive { color: #2e7d32; }
+    .evidence-chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 500; margin-right: 4px;
+    }
+    .evidence-chip.E1 { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+    .evidence-chip.E2 { background: #fff3e0; border: 1px dashed #ff9800; color: #e65100; }
+    .evidence-chip.E3 { background: #fce4ec; border: 1px dotted #e91e63; color: #c62828; }
+    
+    /* Evidence Drawer */
+    .evidence-drawer { display: none; background: #fafafa; border-top: 1px solid #e0e0e0; }
+    .evidence-drawer.open { display: table-row; }
+    .drawer-content { padding: 16px; }
+    .evidence-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .discrepancy-notes { font-size: 0.8rem; color: #616161; }
+    .discrepancy-notes strong { color: #e65100; }
+    
+    /* Evidence Timeline */
+    .timeline { display: flex; flex-direction: column; gap: 12px; }
+    .timeline-item {
+      display: flex; gap: 16px; padding: 16px; background: #fff; border-radius: 8px;
+      border: 1px solid #e0e0e0; position: relative;
+    }
+    .timeline-item::before {
+      content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #e0e0e0;
+    }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-marker {
+      width: 16px; height: 16px; border-radius: 50%; border: 3px solid #fff; flex-shrink: 0;
+      box-shadow: 0 0 0 2px #e0e0e0; z-index: 1;
+    }
+    .timeline-marker.E1 { background: #4caf50; box-shadow: 0 0 0 2px #4caf50; }
+    .timeline-marker.E2 { background: #ff9800; box-shadow: 0 0 0 2px #ff9800; }
+    .timeline-marker.E3 { background: #e91e63; box-shadow: 0 0 0 2px #e91e63; }
+    .timeline-content { flex: 1; }
+    .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .timeline-title { font-weight: 600; font-size: 0.9rem; }
+    .timeline-time { font-size: 0.75rem; color: #9e9e9e; }
+    .timeline-details { font-size: 0.8rem; color: #616161; line-height: 1.6; }
+    .timeline-details code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+    
+    /* Summary Cards */
+    .summary-cards { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .card {
+      padding: 16px 24px; border-radius: 8px;
+      font-weight: 600; font-size: 1.1rem;
+      display: flex; flex-direction: column; align-items: center; min-width: 100px;
+    }
+    .card.near_exact { background: #c8e6c9; color: #2e7d32; }
+    .card.partial { background: #ffe0b2; color: #e65100; }
+    .card.significant { background: #ffcdd2; color: #c62828; }
+    .card.not_executable { background: #e0e0e0; color: #616161; }
+    .card.insufficient { background: #fce4ec; color: #c62828; border: 1px dashed #e91e63; }
+    .card .count { font-size: 2rem; line-height: 1; }
+    .card .label { font-size: 0.75rem; font-weight: 400; margin-top: 4px; text-transform: uppercase; }
+    
+    /* Run Controls */
+    .run-controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 6px;
+      font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: #1976d2; color: #fff; }
+    .btn-primary:hover { background: #1565c0; }
+    .btn-primary:disabled { background: #90caf9; cursor: not-allowed; }
+    .btn-secondary { background: #fff; color: #1976d2; border: 1px solid #1976d2; }
+    .btn-secondary:hover { background: #e3f2fd; }
+    .btn-danger { background: #f44336; color: #fff; }
+    
+    /* Loading */
+    .loading { display: flex; align-items: center; justify-content: center; padding: 48px; color: #757575; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #1976d2; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 16px; }
+    
+    .empty-state { text-align: center; padding: 48px; color: #757575; }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar: Paper Catalog -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>[Papers] Papers</h2>
+        <button class="btn btn-secondary" onclick="loadPapers()" title="Refresh">↻</button>
+      </div>
+      <ul class="paper-list" id="paperList">
+        <li class="loading"><div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div></li>
+      </ul>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main">
+      <header class="header" id="header">
+        <div>
+          <h1 id="paperTitle">Select a paper</h1>
+          <div class="meta" id="paperMeta"></div>
+        </div>
+      </header>
+      
+      <div class="run-controls">
+        <button class="btn btn-primary" id="runLiveBtn" onclick="startRun(false)" disabled>▶ Run Live</button>
+        <button class="btn btn-secondary" id="runFallbackBtn" onclick="startRun(true)" disabled>[Refresh] Run Fallback</button>
+        <button class="btn btn-danger" id="stopRunBtn" onclick="stopRun()" disabled style="display:none;">■ Stop</button>
+        <span id="runStatus" style="align-self:center; font-size:0.875rem; color:#757575;"></span>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="tabs" id="tabs" style="display:none;">
+        <button class="tab active" data-tab="pipeline">🔄 Live Pipeline</button>
+        <button class="tab" data-tab="results">[Results] Results</button>
+        <button class="tab" data-tab="timeline">[Timeline] Evidence Timeline</button>
+        <button class="tab" data-tab="report">[Report] Report</button>
+      </div>
+      
+      <!-- Pipeline Tab -->
+      <div class="tab-panel active" id="panel-pipeline">
+        <div class="pipeline" id="pipeline">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <p>Start a run to see the live pipeline</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Results Tab -->
+      <div class="tab-panel" id="panel-results">
+        <div class="summary-cards" id="summaryCards" style="display:none;"></div>
+        <table class="results-table" id="resultsTable" style="display:none;">
+          <thead>
+            <tr><th>Claim</th><th>Reported</th><th>Reproduced</th><th>Abs Diff</th><th>Rel%</th><th>Verdict</th></tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+        <div class="empty-state" id="resultsEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 12h6M12 9v6"/>
+          </svg>
+          <p>No results yet. Run experiments to see comparison.</p>
+        </div>
+      </div>
+      
+      <!-- Evidence Timeline Tab -->
+      <div class="tab-panel" id="panel-timeline">
+        <div class="timeline" id="timeline">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p>Run experiments to see evidence timeline</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Report Tab -->
+      <div class="tab-panel" id="panel-report">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <p>Report will be available after run completes</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    let currentPaper = null;
+    let currentRunId = null;
+    let pollInterval = null;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPapers();
+      setupTabs();
+    });
+    
+    function setupTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+        });
+      });
+    }
+    
+    // Load papers catalog
+    async function loadPapers() {
+      try {
+        const res = await fetch(`${API_BASE}/papers`);
+        const data = await res.json();
+        renderPaperList(data.papers);
+      } catch (e) {
+        console.error('Failed to load papers:', e);
+        document.getElementById('paperList').innerHTML = '<li class="empty-state">Failed to load papers</li>';
+      }
+    }
+    
+    function renderPaperList(papers) {
+      const list = document.getElementById('paperList');
+      if (!papers.length) {
+        list.innerHTML = '<li class="empty-state">No papers configured</li>';
+        return;
+      }
+      list.innerHTML = papers.map(p => `
+        <li class="paper-item" data-id="${p.id}" onclick="selectPaper('${p.id}')">
+          <div class="paper-title">${p.title}</div>
+          <div class="paper-meta">
+            <span>${p.arxiv}</span>
+            <span>${p.num_experiments} experiments</span>
+          </div>
+        </li>
+      `).join('');
+    }
+    
+    async function selectPaper(paperId) {
+      document.querySelectorAll('.paper-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.id === paperId);
+      });
+      
+      try {
+        const res = await fetch(`${API_BASE}/papers/${paperId}`);
+        const data = await res.json();
+        currentPaper = data.paper;
+        
+        document.getElementById('paperTitle').textContent = currentPaper.title;
+        document.getElementById('paperMeta').innerHTML = `
+          <span>Paper: <a href="https://arxiv.org/abs/${currentPaper.arxiv.split(':').pop()}" target="_blank">${currentPaper.arxiv}</a></span>
+          <span>Repo: <a href="${currentPaper.repo_url}/commit/${currentPaper.commit}" target="_blank">${currentPaper.commit.slice(0,7)}</a></span>
+          <span>${currentPaper.num_experiments} experiments</span>
+        `;
+        
+        document.getElementById('runLiveBtn').disabled = false;
+        document.getElementById('runFallbackBtn').disabled = false;
+        document.getElementById('tabs').style.display = 'flex';
+        
+        // Reset panels
+        clearResults();
+      } catch (e) {
+        console.error('Failed to load paper:', e);
+      }
+    }
+    
+    async function startRun(fallback) {
+      if (!currentPaper) return;
+      
+      currentRunId = null;
+      clearResults();
+      showPipelineSkeleton();
+      
+      document.getElementById('runLiveBtn').disabled = true;
+      document.getElementById('runFallbackBtn').disabled = true;
+      document.getElementById('stopRunBtn').style.display = 'inline-block';
+      document.getElementById('runStatus').textContent = fallback ? 'Running in fallback mode...' : 'Starting live run...';
+      
+      try {
+        const res = await fetch(`${API_BASE}/runs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paper_id: currentPaper.id, fallback })
+        });
+        const data = await res.json();
+        currentRunId = data.run_id;
+        pollRunStatus();
+      } catch (e) {
+        console.error('Failed to start run:', e);
+        document.getElementById('runStatus').textContent = 'Failed to start run';
+        resetRunButtons();
+      }
+    }
+    
+    function stopRun() {
+      if (pollInterval) clearInterval(pollInterval);
+      document.getElementById('runStatus').textContent = 'Run stopped';
+      resetRunButtons();
+    }
+    
+    function resetRunButtons() {
+      document.getElementById('runLiveBtn').disabled = false;
+      document.getElementById('runFallbackBtn').disabled = false;
+      document.getElementById('stopRunBtn').style.display = 'none';
+    }
+    
+    function pollRunStatus() {
+      if (!currentRunId) return;
+      
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/runs/${currentRunId}/events`);
+          const data = await res.json();
+          updatePipeline(data);
+          
+          if (data.status === 'completed' || data.status === 'error') {
+            clearInterval(pollInterval);
+            resetRunButtons();
+            document.getElementById('runStatus').textContent = data.status === 'completed' ? 'Run completed!' : 'Run failed';
+            loadResults();
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      }, 1000);
+    }
+    
+    function showPipelineSkeleton() {
+      const stages = [
+        { id: 'build', title: 'Build Docker Image', desc: 'Building reproduction environment' },
+        { id: 'run', title: 'Execute Experiments', desc: 'Running benchmark experiments' },
+        { id: 'extract', title: 'Extract Metrics', desc: 'Parsing accuracy from logs' },
+        { id: 'compare', title: 'Compare Results', desc: 'Computing verdicts vs paper claims' },
+        { id: 'evidence', title: 'Build Evidence', desc: 'Collecting E1/E2/E3 evidence' },
+        { id: 'report', title: 'Generate Report', desc: 'Rendering HTML report' }
+      ];
+      
+      document.getElementById('pipeline').innerHTML = stages.map((s, i) => `
+        <div class="pipeline-stage" id="stage-${s.id}" data-index="${i}">
+          <div class="stage-header">
+            <div class="stage-title">${s.title}</div>
+            <span class="stage-status pending" id="status-${s.id}">Pending</span>
+          </div>
+          <div class="stage-desc" style="font-size:0.8rem;color:#757575;margin-bottom:8px;">${s.desc}</div>
+          <div class="stage-logs" id="logs-${s.id}" style="display:none;"></div>
+        </div>
+      `).join('');
+    }
+    
+    function updatePipeline(data) {
+      const stageMap = {
+        'starting': 'build',
+        'building': 'build',
+        'running': 'run',
+        'completed': 'report'
+      };
+      
+      // Update current stage
+      if (data.current_experiment) {
+        document.getElementById('status-run').className = 'stage-status running';
+        document.getElementById('status-run').innerHTML = '<div class="stage-spinner"></div> Running';
+        document.getElementById('logs-run').style.display = 'block';
+        document.getElementById('logs-run').innerHTML = data.logs.map(l => `<div class="log-line">${escapeHtml(l)}</div>`).join('');
+      }
+      
+      // Update experiment results in pipeline
+      data.experiments.forEach(exp => {
+        const status = exp.comparison.verdict === 'near_exact' ? 'completed' : 
+                      exp.comparison.verdict === 'significant' ? 'error' : 'completed';
+        // Could add per-experiment indicators here
+      });
+      
+      // Mark stages as completed based on run status
+      if (data.status === 'completed' || data.status === 'error') {
+        ['build', 'run', 'extract', 'compare', 'evidence', 'report'].forEach(s => {
+          document.getElementById(`stage-${s}`).classList.add('completed');
+          document.getElementById(`status-${s}`).className = 'stage-status completed';
+          document.getElementById(`status-${s}`).textContent = 'Completed';
+        });
+      }
+    }
+    
+    async function loadResults() {
+      if (!currentRunId) return;
+      
+      try {
+        const res = await fetch(`${API_BASE}/runs/${currentRunId}`);
+        const data = await res.json();
+        renderResults(data);
+        renderTimeline(data);
+      } catch (e) {
+        console.error('Failed to load results:', e);
+      }
+    }
+    
+    function renderResults(data) {
+      const experiments = data.experiments || [];
+      if (!experiments.length) return;
+      
+      // Summary cards
+      const summary = {
+        near_exact: experiments.filter(e => e.comparison.verdict === 'near_exact').length,
+        partial: experiments.filter(e => e.comparison.verdict === 'partial').length,
+        significant: experiments.filter(e => e.comparison.verdict === 'significant').length,
+        not_executable: experiments.filter(e => e.comparison.verdict === 'not_executable').length,
+        insufficient: experiments.filter(e => e.comparison.verdict === 'insufficient').length
+      };
+      
+      document.getElementById('summaryCards').style.display = 'flex';
+      document.getElementById('summaryCards').innerHTML = `
+        <div class="card near_exact"><span class="count">${summary.near_exact}</span><span class="label">near_exact</span></div>
+        <div class="card partial"><span class="count">${summary.partial}</span><span class="label">partial</span></div>
+        <div class="card significant"><span class="count">${summary.significant}</span><span class="label">significant</span></div>
+        <div class="card not_executable"><span class="count">${summary.not_executable}</span><span class="label">not_executable</span></div>
+        <div class="card insufficient"><span class="count">${summary.insufficient}</span><span class="label">insufficient</span></div>
+      `;
+      
+      // Table
+      document.getElementById('resultsTable').style.display = 'table';
+      document.getElementById('resultsEmpty').style.display = 'none';
+      
+      const tbody = document.getElementById('resultsBody');
+      tbody.innerHTML = experiments.map((exp, i) => `
+        <tr class="evidence-row" onclick="toggleDrawer('drawer-${exp.claim_id}')">
+          <td><span class="exp-id">${exp.claim_id}</span> ${exp.model}</td>
+          <td>${exp.reported} <span class="evidence-chip E1" title="Paper ${exp.provenance.table || 'Table 1'}, Row ${exp.provenance.row || exp.model}, Col ${exp.provenance.col || 'accuracy'}">E1</span></td>
+          <td>${exp.reproduced} <span class="evidence-chip E1" title="${exp.log_line} ${exp.metric_text}">E1</span></td>
+          <td class="${exp.comparison.abs_diff < 0 ? 'negative' : 'positive'}">${exp.comparison.abs_diff.toFixed(4)}</td>
+          <td>${exp.comparison.rel_pct.toFixed(2)}%</td>
+          <td><span class="badge ${exp.comparison.verdict}" title="${exp.verdict_tooltip}">${exp.comparison.verdict}</span></td>
+        </tr>
+        <tr class="evidence-drawer" id="drawer-${exp.claim_id}">
+          <td colspan="6">
+            <div class="drawer-content">
+              <div class="evidence-chips">
+                <span class="evidence-chip E1" title="Paper ${exp.provenance.table || 'Table 1'}, Row ${exp.provenance.row || exp.model}, Col ${exp.provenance.col || 'accuracy'}">E1: Paper ${exp.provenance.table || 'Table 1'}</span>
+                <span class="evidence-chip E1" title="${exp.log_line} ${exp.metric_text}">E1: ${exp.log_line}</span>
+                <span class="evidence-chip E2" title="${exp.mapping.command}">E2: ${exp.mapping.files?.join(', ') || 'benchmark.py'}</span>
+                <span class="evidence-chip E2" title="${exp.config_note}">E2: ${exp.config_note}</span>
+              </div>
+              <div class="discrepancy-notes">${exp.discrepancy_note}</div>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    function renderTimeline(data) {
+      const experiments = data.experiments || [];
+      if (!experiments.length) return;
+      
+      let timelineHtml = '';
+      experiments.forEach(exp => {
+        exp.evidence.forEach(ev => {
+          const excerpt = ev.excerpt.length > 100 ? ev.excerpt.slice(0,100) + '...' : ev.excerpt;
+          timelineHtml += `
+            <div class="timeline-item">
+              <div class="timeline-marker ${ev.tier}"></div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-title">${exp.model} (${exp.claim_id}) - ${ev.kind}</span>
+                  <span class="timeline-time">${ev.tier}</span>
+                </div>
+                <div class="timeline-details">
+                  <strong>Ref:</strong> ${escapeHtml(ev.ref)}<br>
+                  <strong>Excerpt:</strong> <code>${escapeHtml(excerpt)}</code>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      });
+      
+      document.getElementById('timeline').innerHTML = timelineHtml;
+    }
+    
+    function toggleDrawer(id) {
+      const drawer = document.getElementById(id);
+      if (drawer) drawer.classList.toggle('open');
+    }
+    
+    function clearResults() {
+      document.getElementById('summaryCards').style.display = 'none';
+      document.getElementById('resultsTable').style.display = 'none';
+      document.getElementById('resultsEmpty').style.display = 'block';
+      document.getElementById('timeline').innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <p>Run experiments to see evidence timeline</p>
+        </div>
+      `;
+      showPipelineSkeleton();
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  { "claim_id": "EXP-001", "command": "python benchmark.py --model=rf --dataset=iris", "files": ["benchmark.py"] },
+  { "claim_id": "EXP-002", "command": "python benchmark.py --model=logreg --dataset=iris", "files": ["benchmark.py"] },
+  { "claim_id": "EXP-003", "command": "python benchmark.py --model=rf --dataset=digits", "files": ["benchmark.py"] },
+  { "claim_id": "EXP-004", "command": "python benchmark.py --model=logreg --dataset=digits", "files": ["benchmark.py"] }
+]

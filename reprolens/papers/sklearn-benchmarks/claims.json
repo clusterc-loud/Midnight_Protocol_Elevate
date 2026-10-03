@@ -1,0 +1,54 @@
+[
+  {
+    "id": "EXP-001",
+    "model": "RandomForest",
+    "metric": "accuracy",
+    "reported_value": 0.96,
+    "provenance": {
+      "paper": "Scikit-learn Documentation",
+      "table": "Classifier comparison",
+      "row": "RandomForest",
+      "col": "accuracy",
+      "dataset": "iris"
+    }
+  },
+  {
+    "id": "EXP-002",
+    "model": "LogisticRegression",
+    "metric": "accuracy",
+    "reported_value": 0.97,
+    "provenance": {
+      "paper": "Scikit-learn Documentation",
+      "table": "Classifier comparison",
+      "row": "LogisticRegression",
+      "col": "accuracy",
+      "dataset": "iris"
+    }
+  },
+  {
+    "id": "EXP-003",
+    "model": "RandomForest",
+    "metric": "accuracy",
+    "reported_value": 0.95,
+    "provenance": {
+      "paper": "Scikit-learn Documentation",
+      "table": "Classifier comparison",
+      "row": "RandomForest",
+      "col": "accuracy",
+      "dataset": "digits"
+    }
+  },
+  {
+    "id": "EXP-004",
+    "model": "LogisticRegression",
+    "metric": "accuracy",
+    "reported_value": 0.96,
+    "provenance": {
+      "paper": "Scikit-learn Documentation",
+      "table": "Classifier comparison",
+      "row": "LogisticRegression",
+      "col": "accuracy",
+      "dataset": "digits"
+    }
+  }
+]

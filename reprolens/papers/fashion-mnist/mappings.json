@@ -1,0 +1,4 @@
+[
+  { "claim_id": "EXP-001", "command": "python benchmark.py --model=rf", "files": ["benchmark.py"] },
+  { "claim_id": "EXP-002", "command": "python benchmark.py --model=logreg", "files": ["benchmark.py"] }
+]

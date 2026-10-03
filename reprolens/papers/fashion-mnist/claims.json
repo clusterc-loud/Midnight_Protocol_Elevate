@@ -1,0 +1,26 @@
+[
+  {
+    "id": "EXP-001",
+    "model": "RandomForest",
+    "reported_value": 0.873,
+    "provenance": {
+      "paper": "arXiv:1708.07747",
+      "page": 4,
+      "table": "Table 1",
+      "row": "RandomForest",
+      "col": "Accuracy"
+    }
+  },
+  {
+    "id": "EXP-002",
+    "model": "LogisticRegression",
+    "reported_value": 0.851,
+    "provenance": {
+      "paper": "arXiv:1708.07747",
+      "page": 4,
+      "table": "Table 1",
+      "row": "LogisticRegression",
+      "col": "Accuracy"
+    }
+  }
+]
