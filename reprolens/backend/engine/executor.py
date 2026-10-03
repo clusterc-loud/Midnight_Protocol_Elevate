@@ -1,8 +1,20 @@
 """Docker execution engine for ReproLens."""
+import re
 import subprocess
 import time
 from pathlib import Path
 from typing import Tuple
+
+
+def _parse_meminfo(stdout: str) -> int:
+    """Peak memory from /proc/meminfo output in container stdout. Returns MB, 0 if unavailable."""
+    mem_mb = 0
+    for line in stdout.splitlines():
+        m = re.match(r"MemTotal:\s+(\d+)", line)
+        if m:
+            mem_mb = int(m.group(1)) // 1024
+            break
+    return mem_mb
 
 
 def run_docker(command: str, paper: dict, timeout: int = 300) -> Tuple[str, int, float, int]:
@@ -13,13 +25,18 @@ def run_docker(command: str, paper: dict, timeout: int = 300) -> Tuple[str, int,
     repo_path = Path(paper.get("repo_path", paper["path"])).resolve()
     image_name = paper["image_name"]
     
+    # Augment command to capture /proc/meminfo from the container
+    mem_augmented_command = f"{command}; cat /proc/meminfo"
+    
     cmd = [
         "docker", "run", "--rm",
-        "-v", f"{repo_path}:/repo",
+        "-v", f"{repo_path}:/repo:ro",
         "-w", "/repo",
         "--cpus=2", "--memory=4g", "--memory-swap=4g",
         "--network=none", "--pids-limit=256",
-        image_name, "bash", "-c", command
+        "--read-only", "--tmpfs=/tmp",
+        "--cap-drop=ALL", "--security-opt=no-new-privileges",
+        image_name, "bash", "-c", mem_augmented_command
     ]
     
     start = time.time()
@@ -41,7 +58,9 @@ def run_docker(command: str, paper: dict, timeout: int = 300) -> Tuple[str, int,
         
         proc.wait(timeout=timeout)
         wall = time.time() - start
-        return "".join(stdout_lines), proc.returncode, wall, 0
+        stdout = "".join(stdout_lines)
+        peak_mb = _parse_meminfo(stdout)
+        return stdout, proc.returncode, wall, peak_mb
         
     except subprocess.TimeoutExpired:
         return "", -1, timeout, 0

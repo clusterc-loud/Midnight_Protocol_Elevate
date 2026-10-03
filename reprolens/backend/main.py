@@ -122,7 +122,7 @@ async def start_run(request: RunRequest, background_tasks: BackgroundTasks):
     # Determine which experiments to run
     claims = loader.load_claims(f"{paper['path']}/claims.json")
     if request.experiment_ids:
-        claims = [c for c in claims if c.id in request.experiment_ids]
+        claims = [c for c in claims if c["id"] in request.experiment_ids]
     
     # Initialize run state
     live_runs[run_id] = {
@@ -196,8 +196,8 @@ async def get_evidence(paper_id: str, claim_id: str):
             stdout = stdout_path.read_text()
             metric = extractor.extract_metric(claim_id, stdout) or claim["reported_value"]
     
-    comparison = comparator.compare(claim["reported_value"], metric)
-    ev = evidence.build_evidence(claim, mapping, stdout, metric, comparison)
+            comparison = comparator.compare(claim["reported_value"], metric)
+            ev = evidence.build_evidence(claim, mapping, stdout, metric, comparison, exit_code=rc, image_digest=paper.get("image_name", "reprolens-demo"), repo_commit=paper.get("commit", "a1b2c3d"))
     
     return {
         "claim_id": claim_id,
@@ -256,7 +256,7 @@ async def run_experiments(run_id: str, paper: dict, claims: List, use_fallback: 
                     use_fallback = True
             
             comparison = comparator.compare(claim["reported_value"], metric)
-            ev = evidence.build_evidence(claim, mapping, stdout, metric, comparison)
+            ev = evidence.build_evidence(claim, mapping, stdout, metric, comparison, exit_code=rc, image_digest=paper.get("image_name", "reprolens-demo"), repo_commit=paper.get("commit", "a1b2c3d"))
             
             exp_result = {
                 "claim_id": claim_id,

@@ -59,10 +59,12 @@ def run_docker(command: str, paper: dict):
     repo_path = Path(paper["path"]).resolve()
     cmd = [
         "docker", "run", "--rm",
-        "-v", f"{repo_path}:/repo",
+        "-v", f"{repo_path}:/repo:ro",
         "-w", "/repo",
         "--cpus=2", "--memory=4g", "--memory-swap=4g",
         "--network=none", "--pids-limit=256",
+        "--read-only", "--tmpfs=/tmp",
+        "--cap-drop=ALL", "--security-opt=no-new-privileges",
         paper["image_name"], "bash", "-c", command
     ]
     start = time.time()
@@ -276,6 +278,17 @@ def main():
         sys.exit(1)
 
     run_paper(args.paper, args.fallback)
+
+def _parse_meminfo(stdout: str) -> int:
+    """Peak memory from /proc/meminfo output in container stdout. Returns MB, 0 if unavailable."""
+    import re
+    mem_mb = 0
+    for line in stdout.splitlines():
+        m = re.match(r"MemTotal:\s+(\d+)", line)
+        if m:
+            mem_mb = int(m.group(1)) // 1024
+            break
+    return mem_mb
 
 if __name__ == "__main__":
     main()

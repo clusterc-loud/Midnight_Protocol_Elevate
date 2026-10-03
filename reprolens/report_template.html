@@ -206,6 +206,21 @@
       <div class="card insufficient"><span class="count">{{ summary.insufficient }}</span><span class="label">insufficient</span></div>
     </section>
 
+    {% if results and results[0].get('llm_explanation') is not none %}
+    <section class="llm-explanations">
+      <h3>LLM Explanations (E3)</h3>
+      <p class="llm-disclaimer">Grounded in E1/E2 evidence. Verdicts are deterministic from the comparison engine.</p>
+      {% for r in results %}
+        {% if r.get('llm_explanation') %}
+        <div class="llm-explanation-card">
+          <h4>[[ r.model ]]</h4>
+          <p class="llm-explanation-text">[[ r.llm_explanation ]]</p>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </section>
+    {% endif %}
+
     <section class="comparison-table">
       <table class="comparison-table">
         <thead>

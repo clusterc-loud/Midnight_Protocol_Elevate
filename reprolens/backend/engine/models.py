@@ -31,9 +31,17 @@ class ProvenanceConfig(BaseModel):
     col: str
 
 
+class MappingConfidence(BaseModel):
+    score: float  # 0.0 to 1.0
+    rationale: str  # e.g., "Human-confirmed", "Command matches benchmark.py"
+    evidence: List[str]  # e.g., ["mappings.json human-curated"]
+
+
 class CommandMapping(BaseModel):
+    claim_id: str
     command: str
     files: List[str] = []
+    confidence: MappingConfidence = MappingConfidence(score=1.0, rationale="Human-confirmed mapping", evidence=["mappings.json human-curated"])
 
 
 class Claim(BaseModel):
@@ -42,7 +50,7 @@ class Claim(BaseModel):
     metric: str
     reported_value: float
     provenance: ProvenanceConfig
-    mapping: dict
+    mapping: CommandMapping
 
     class Config:
         arbitrary_types_allowed = True
@@ -92,6 +100,10 @@ class ExecutionResult(BaseModel):
     execution_mode: str = "live"
     wall_time: float = 0.0
     exit_code: int = 0
+
+    # Evidence provenance tracking
+    image_digest: str = ""
+    repo_commit: str = ""
 
 
 # Regex patterns for metric extraction

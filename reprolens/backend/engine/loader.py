@@ -74,7 +74,3 @@ def get_paper_dir(paper_id: str, papers_dir: Path) -> Path:
     return paper_dir
 
 
-def load_paper_config(paper_id: str, papers_dir: Path) -> dict:
-    """Load complete paper configuration."""
-    paper_dir = get_paper_dir(paper_id, Path("papers"))
-    return load_paper(Path(f"papers/{paper_id}"))
